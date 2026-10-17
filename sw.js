@@ -1,5 +1,5 @@
 /* 單字卡睡眠學習 PWA Service Worker v1 */
-var CACHE = "vocab-cards-v2";
+var CACHE = "vocab-cards-v3";
 var PRECACHE = [
   "index.html",
   "all.html",
