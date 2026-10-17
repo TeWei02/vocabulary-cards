@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><title>L1 圖文單字卡（精簡版）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:#f5f6fa;padding:20px}
+h1{font-size:22px;margin-bottom:12px;color:#2c3e50}
+a.back{color:#3498db;text-decoration:none;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column}
+.imgwrap{height:140px;background:#eef1f5;display:flex;align-items:center;justify-content:center}
+.imgwrap img{width:100%;height:100%;object-fit:cover}
+.imgwrap.noimg .letter{font-size:52px;font-weight:700;color:#bdc3c7}
+.body{padding:10px 12px 14px}
+.body h3{font-size:17px;color:#1f2d3d;word-break:break-word}
+.lvl{display:inline-block;margin-left:6px;font-size:11px;color:#fff;background:#34495e;border-radius:4px;padding:1px 6px;vertical-align:middle}
+.pos{display:inline-block;margin-top:4px;font-size:12px;color:#fff;background:#5b8def;border-radius:4px;padding:2px 6px}
+.defs{margin-top:6px}
+.def{font-size:13px;color:#4a5568;line-height:1.5}
+</style></head><body>
+<h1>L6 圖文單字卡（精簡版）（0 詞，含圖 0 張）</h1>
+<a class="back" href="index.html">← 總目錄</a>
+<div class="grid"></div>
+<script>(function(){
+  var cards=Array.prototype.slice.call(document.querySelectorAll('.card'));
+  if(!cards.length)return;
+  var state={idx:-1,playing:false,loop:false,rate:1,spell:true,step:null};
+  var audio=document.createElement('audio');
+  audio.preload='auto';
+  var synth=('speechSynthesis' in window)?window.speechSynthesis:null;
+  var voices=[];
+  function getVoices(){if(synth)voices=synth.getVoices();}
+  if(synth){getVoices();synth.onvoiceschanged=getVoices;}
+
+  function q(s){return encodeURIComponent(s||'');}
+  function wordOf(card){var h=card.querySelector('h3');return h?h.textContent.trim():'';}
+  function cnOf(card){
+    // 完整讀出「詞性 + 釋義」
+    var d=card.querySelector('.def');
+    return d?d.textContent.trim():'';
+  }
+
+  // 發音文本：斜線詞取主詞、去括號；全大寫縮寫改讀字母（如 AI→A I）
+  function pronText(w){
+    var t=(w||'').split('/')[0].replace(/[()]/g,'').replace(/\s+/g,' ').trim();
+    if(/^[A-Z]{1,5}$/.test(t))return t.split('').join(' ');
+    return t;
+  }
+  // 拆字文本：片語/句子逐詞逐字母拆，總長受限避免 URL 過長（超過 45 字母只拆前段）
+  function spellText(w){
+    var main=(w||'').split('/')[0].replace(/[()]/g,'');
+    var toks=main.split(/[^A-Za-z]+/).filter(function(x){return x.length>0;});
+    var parts=[],total=0;
+    for(var i=0;i<toks.length;i++){
+      total+=toks[i].length;
+      if(total>45)break;
+      parts.push(toks[i].split('').join(' '));
+    }
+    return parts.join(' , ');
+  }
+  // 常用去聲字集合（普通話四聲），用於「一」「不」變調判斷
+  var TONE4='定到次就要去會是位面上上下地大個這那向對放告共過後進看快課路內氣熱認數送算太萬問現信意正住自最辦半變次道電動對度段斷法飯份蓋各夠害號價件見建將叫教近就據句空困浪類累例力利列令論落慢命面念派片票讓任日入弱散色設社示事視勢試室受售述樹歲態替跳退忘位誤下線像相向項效謝信性選雪訓壓驗樣藥業義藝意議應用又遇願月越運在暫贊造則責站占戰照這陣正證政志制治中重助住注祝狀準自字總做坐座不部布步數樹素訴速宿算歲遂隧';
+
+  // 「一」「不」變調：去聲前「一」讀 yí（用同音字「宜」）、非去聲前讀 yì（用「易」）
+  // 「不」去聲前讀 bú（保留「不」由 TTS 依整詞自然變調，效果穩定）
+  function toneFix(t){
+    if(!t)return t;
+    // 去聲前：一 + 去聲字 → 宜；非去聲前：一 + 非去聲漢字 → 易
+    t=t.replace(/一(?=[\u4e00-\u9fff])/g,function(m,off,s){
+      var nx=s[off+m.length];
+      if(!nx)return m;
+      if(TONE4.indexOf(nx)>=0)return '宜';
+      return '易';
+    });
+    return t;
+  }
+
+  // 中文理解式朗讀：不唸括號符號（（）<> 只唸內容）、詞性分讀停頓、義項自然化
+  function naturalCn(text){
+    var t=text||'';
+    t=t.replace(/[（(<>【】]/g,'').replace(/[）)>】]/g,'');
+    t=t.replace(/^(名詞|動詞|形容詞|副詞|介詞|連接詞|感嘆詞|感歎詞|代詞|冠詞|數詞|助動詞|縮寫|慣用語|片語|動詞片語|名詞片語|形容詞片語|副詞片語)\s*/, '$1。');
+    t=t.replace(/；/g,'，');
+    return toneFix(t);
+  }
+
+  // 依次嘗試多個音頻源，全失敗再退回系統語音；防重入避免疊音/回音
+  function playUrl(urls){
+    return new Promise(function(res,rej){
+      var i=0,done=false;
+      function resetAudio(){
+        audio.pause();
+        audio.removeAttribute('src');
+        audio.load();
+      }
+      function tryNext(){
+        if(done)return;
+        resetAudio();
+        if(i>=urls.length){done=true;rej(new Error('all audio failed'));return;}
+        var a=audio,fired=false;
+        a.onended=function(){if(fired||done)return;fired=true;done=true;res();};
+        a.onerror=function(){if(fired||done)return;fired=true;tryNext();};
+        a.src=urls[i++];a.playbackRate=state.rate;
+        var p=a.play();
+        if(p&&p.catch)p.catch(function(){if(fired||done)return;fired=true;tryNext();});
+      }
+      tryNext();
+    });
+  }
+  function speakSynth(text,lang){
+    return new Promise(function(res){
+      if(!synth||!text){res();return;}
+      var u=new SpeechSynthesisUtterance(text);
+      u.lang=lang;u.rate=state.rate;
+      var v=null;
+      for(var j=0;j<voices.length;j++){
+        var l=voices[j].lang||'';
+        if(l===lang||l.indexOf(lang)===0){v=voices[j];break;}
+      }
+      if(v)u.voice=v;
+      u.onend=function(){res();};
+      u.onerror=function(){res();};
+      synth.speak(u);
+    });
+  }
+  function speakEn(text){return playUrl([
+    'https://dict.youdao.com/dictvoice?audio='+q(text)+'&type=2',
+    'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(text)
+  ]).catch(function(){return speakSynth(text,'en-US');});}
+  // 拆字：逐字母拼讀（Google 對字母串讀得準）
+  function speakSpell(text){
+    var letters=text.split('').join(' ');
+    return playUrl([
+      'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(letters)
+    ]).catch(function(){return speakSynth(letters,'en-US');});
+  }
+  function speakCn(text){return playUrl([
+    'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=zh-TW&q='+q(text)
+  ]).catch(function(){return speakSynth(text,'zh-TW');});}
+
+  function setHighlight(card){
+    cards.forEach(function(c){c.classList.remove('playing');c.style.outline='';});
+    if(card){card.classList.add('playing');card.style.outline='3px solid #e67e22';card.style.outlineOffset='-3px';}
+  }
+  function setBar(){
+    var t=document.getElementById('pbToggle');
+    var info=document.getElementById('pbInfo');
+    if(t)t.textContent=state.playing?'⏸ 暫停':'▶ 自動播放';
+    if(info&&state.idx>=0)info.textContent=(state.idx+1)+' / '+cards.length+(state.loop?'（循環）':'');
+  }
+
+  // 播放單張卡：先唸整詞 → 拆字 → 中文釋義（理解式）
+  function playCard(card,auto){
+    var w=wordOf(card),cn=cnOf(card);
+    var btn=card.querySelector('.pos');
+    if(btn&&!auto)btn.textContent='🔊 播放中';
+    var pw=pronText(w),sw=spellText(w);
+    function wordSeq(){
+      // 用戶要求：唸完再拆，不是先拆再唸
+      return speakEn(pw).then(function(){
+        if(state.spell&&sw)return speakSpell(sw);
+      });
+    }
+    return wordSeq().then(function(){
+      if(!cn)return;
+      return speakCn(naturalCn(cn));
+    }).then(function(){
+      if(btn&&!auto){btn.textContent='▶ 播放';}
+      if(state.playing&&state.step&&state.step.card===card){
+        state.step=null;
+        scheduleNext();
+      }
+    }).catch(function(){
+      if(btn&&!auto){btn.textContent='▶ 播放';}
+      if(state.playing&&state.step&&state.step.card===card){
+        state.step=null;
+        scheduleNext();
+      }
+    });
+  }
+
+  function playIndex(i){
+    state.idx=i;
+    var card=cards[i];
+    setHighlight(card);
+    card.scrollIntoView({block:'center',behavior:'smooth'});
+    setBar(); // 自動連播時進度即時更新
+    state.step={card:card};
+    playCard(card,true);
+  }
+  function scheduleNext(){
+    if(!state.playing)return;
+    if(state.idx>=cards.length-1){
+      if(state.loop){playIndex(0);}
+      else{stopAuto(true);}
+      return;
+    }
+    playIndex(state.idx+1);
+  }
+  function stopAuto(finished){
+    state.playing=false;state.step=null;
+    if(audio)audio.pause();
+    if(synth)synth.cancel();
+    setHighlight(null);setBar();
+    if(finished&&state.idx>=0){
+      var info=document.getElementById('pbInfo');
+      if(info)info.textContent='已播完 '+(state.idx+1)+' / '+cards.length;
+    }
+  }
+  function toggleAuto(){
+    if(state.playing){stopAuto(false);return;}
+    state.playing=true;
+    var start=state.idx<0?0:state.idx;
+    if(state.idx>=cards.length-1)start=0;
+    playIndex(start);
+    setBar();
+  }
+
+  // 浮動控制條
+  var bar=document.createElement('div');
+  bar.id='playerBar';
+  bar.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;background:rgba(31,45,61,.96);color:#fff;display:flex;align-items:center;gap:8px;padding:9px 14px;font-family:-apple-system,"PingFang TC",sans-serif;font-size:13px;box-shadow:0 -2px 10px rgba(0,0,0,.2)';
+  bar.innerHTML='<button id="pbPrev" style="background:#34495e;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer">⏮ 上一個</button>'
+    +'<button id="pbToggle" style="background:#e67e22;border:0;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700">▶ 自動播放</button>'
+    +'<button id="pbNext" style="background:#34495e;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer">下一個 ⏭</button>'
+    +'<span id="pbInfo" style="min-width:90px;text-align:center"></span>'
+    +'<select id="pbRate" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select>'
+    +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbSpell" checked> 拆字</label>'
+    +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbLoop"> 循環</label>';
+  document.body.appendChild(bar);
+  document.getElementById('pbToggle').addEventListener('click',toggleAuto);
+  document.getElementById('pbPrev').addEventListener('click',function(){
+    if(state.playing){stopAuto(false);}
+    playIndex(state.idx>0?state.idx-1:0);
+    setBar();
+  });
+  document.getElementById('pbNext').addEventListener('click',function(){
+    if(state.playing){stopAuto(false);}
+    playIndex(state.idx<0?0:(state.idx+1)%cards.length);
+    setBar();
+  });
+  document.getElementById('pbRate').addEventListener('change',function(){state.rate=parseFloat(this.value);});
+  document.getElementById('pbSpell').addEventListener('change',function(){state.spell=this.checked;});
+  document.getElementById('pbLoop').addEventListener('change',function(){state.loop=this.checked;setBar();});
+
+  // 單卡點擊播放（點詞性按鈕）
+  cards.forEach(function(card){
+    var btn=card.querySelector('.pos');
+    if(!btn)return;
+    btn.style.cursor='pointer';
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(state.playing)stopAuto(false);
+      setHighlight(card);
+      card.scrollIntoView({block:'center',behavior:'smooth'});
+      playCard(card,false);
+    });
+  });
+})();
+</script></body></html>
