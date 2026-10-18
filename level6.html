@@ -26,6 +26,14 @@ a.back{color:#3498db;text-decoration:none;font-size:14px}
   var cards=Array.prototype.slice.call(document.querySelectorAll('.card'));
   if(!cards.length)return;
   var state={idx:-1,playing:false,loop:false,rate:1,spell:true,fast:false,gap:1.5,step:null,timer:null};
+  // 斷點續播：記住上次播放位置，重載後不從第一個開始
+  var STORE_KEY='vc_player_idx';
+  function loadIdx(){
+    var v=parseInt(localStorage.getItem(STORE_KEY)||'-1',10);
+    return (isNaN(v)||v<0||v>=cards.length)?-1:v;
+  }
+  function saveIdx(){try{localStorage.setItem(STORE_KEY,String(state.idx));}catch(e){}}
+  state.idx=loadIdx();
   var audio=document.createElement('audio');
   audio.preload='auto';
   var synth=('speechSynthesis' in window)?window.speechSynthesis:null;
@@ -34,7 +42,14 @@ a.back{color:#3498db;text-decoration:none;font-size:14px}
   if(synth){getVoices();synth.onvoiceschanged=getVoices;}
 
   function q(s){return encodeURIComponent(s||'');}
-  function wordOf(card){var h=card.querySelector('h3');return h?h.textContent.trim():'';}
+  function wordOf(card){
+    // 只取單字主詞，排除等級徽章（L1~L6 不唸）
+    var h=card.querySelector('h3');
+    if(!h)return '';
+    var c=h.cloneNode(true),lv=c.querySelector('.lvl');
+    if(lv)lv.remove();
+    return c.textContent.trim();
+  }
   function cnOf(card){
     // 完整讀出「詞性 + 釋義」
     var d=card.querySelector('.def');
@@ -182,6 +197,7 @@ a.back{color:#3498db;text-decoration:none;font-size:14px}
 
   function playIndex(i){
     state.idx=i;
+    saveIdx();
     var card=cards[i];
     setHighlight(card);
     card.scrollIntoView({block:'center',behavior:'smooth'});
@@ -237,21 +253,40 @@ a.back{color:#3498db;text-decoration:none;font-size:14px}
     playIndex(next);
   }
 
-  // 浮動控制條
+  // 浮動控制條（電腦版一行完整控制；手機版獨立精簡佈局，自動播放大按鈕可點）
   var bar=document.createElement('div');
   bar.id='playerBar';
   bar.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;background:rgba(31,45,61,.96);color:#fff;display:flex;align-items:center;gap:8px;padding:9px 14px;font-family:-apple-system,"PingFang TC",sans-serif;font-size:13px;box-shadow:0 -2px 10px rgba(0,0,0,.2)';
-  bar.innerHTML='<button id="pbPrev" style="background:#34495e;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer">⏮ 上一個</button>'
+  bar.innerHTML='<style>'
+    +'#playerBar .pb-main{display:flex;align-items:center;gap:8px}'
+    +'#playerBar .pb-opt{display:flex;align-items:center;gap:8px}'
+    +'@media (max-width:767px){'
+    +'#playerBar{flex-wrap:wrap;gap:6px;padding:10px 8px;font-size:14px}'
+    +'#playerBar .pb-main{width:100%;justify-content:center}'
+    +'#playerBar #pbToggle{flex:1;padding:12px 6px;font-size:15px;min-height:46px}'
+    +'#playerBar #pbPrev,#playerBar #pbNext{min-height:46px;padding:0 10px;font-size:14px}'
+    +'#playerBar #pbSkip{display:none}'
+    +'#playerBar .pb-opt{display:none}'
+    +'#playerBar #pbInfo{width:100%;text-align:center;order:9}'
+    +'}</style>'
+    +'<span class="pb-main">'
+    +'<button id="pbPrev" style="background:#34495e;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer">⏮ 上一個</button>'
     +'<button id="pbToggle" style="background:#e67e22;border:0;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700">▶ 自動播放</button>'
     +'<button id="pbNext" style="background:#34495e;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer">下一個 ⏭</button>'
     +'<button id="pbSkip" style="background:#c0392b;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer">跳過此詞 ⏭⏭</button>'
+    +'</span>'
     +'<span id="pbInfo" style="min-width:90px;text-align:center"></span>'
+    +'<span class="pb-opt">'
     +'<select id="pbGap" title="間隔" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.5">間隔 短0.5s</option><option value="1.5" selected>間隔 中1.5s</option><option value="3">間隔 長3s</option></select>'
     +'<select id="pbRate" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select>'
     +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbFast"> 快速模式</label>'
     +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbSpell" checked> 拆字</label>'
-    +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbLoop"> 循環</label>';
+    +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbLoop"> 循環</label>'
+    +'</span>';
   document.body.appendChild(bar);
+  // 重載後提示上次播放位置（斷點續播）
+  var info0=document.getElementById('pbInfo');
+  if(info0&&state.idx>=0)info0.textContent='上次播到 '+(state.idx+1)+' / '+cards.length+'，自動播放由此繼續';
   document.getElementById('pbToggle').addEventListener('click',toggleAuto);
   document.getElementById('pbPrev').addEventListener('click',function(){
     if(state.playing){stopAuto(false);}
@@ -271,13 +306,14 @@ a.back{color:#3498db;text-decoration:none;font-size:14px}
   document.getElementById('pbSkip').addEventListener('click',skipWord);
 
   // 單卡點擊播放（點詞性按鈕）
-  cards.forEach(function(card){
+  cards.forEach(function(card,ci){
     var btn=card.querySelector('.pos');
     if(!btn)return;
     btn.style.cursor='pointer';
     btn.addEventListener('click',function(e){
       e.stopPropagation();
       if(state.playing)stopAuto(false);
+      state.idx=ci;saveIdx();
       setHighlight(card);
       card.scrollIntoView({block:'center',behavior:'smooth'});
       playCard(card,false);
