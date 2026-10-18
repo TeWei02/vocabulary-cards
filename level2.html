@@ -74,9 +74,10 @@ body.lang-zh .def.en{display:none}
     if(/^[A-Z]{1,5}$/.test(t))return t.split('').join(' ');
     return t;
   }
-  // 拆字文本：片語/句子逐詞逐字母拆，總長受限避免 URL 過長（超過 45 字母只拆前段）
+  // 拆字文本：全部變體逐詞逐字母拆（含斜線分隔的 a/an、movie/film 等，不遺漏後綴變體），
+  // 總長受限避免 URL 過長（超過 45 字母只拆前段）
   function spellText(w){
-    var main=(w||'').split('/')[0].replace(/[()]/g,'');
+    var main=(w||'').replace(/[()]/g,'');
     var toks=main.split(/[^A-Za-z]+/).filter(function(x){return x.length>0;});
     var parts=[],total=0;
     for(var i=0;i<toks.length;i++){
@@ -155,11 +156,12 @@ body.lang-zh .def.en{display:none}
     'https://dict.youdao.com/dictvoice?audio='+q(text)+'&type=2',
     'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(text)
   ]).catch(function(){return speakSynth(text,'en-US');});}
-  // 拆字：逐字母拼讀（Google 對字母串讀得準）
+  // 拆字：逐字母拼讀（Google 對字母串讀得準；失敗改試有道，再退回系統語音）
   function speakSpell(text){
     var letters=text.split('').join(' ');
     return playUrl([
-      'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(letters)
+      'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(letters),
+      'https://dict.youdao.com/dictvoice?audio='+q(letters)+'&type=2'
     ]).catch(function(){return speakSynth(letters,'en-US');});
   }
   function speakCn(text){return playUrl([

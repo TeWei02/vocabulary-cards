@@ -24,7 +24,7 @@ window.VOCAB_INDEX=[{"w":"(all) in one","lv":"L1","i":1,"p":"","d":"片語 成�
     });
     res.addEventListener('click',function(e){
       var t=e.target.closest('.item');if(!t)return;
-      location.href='單字卡_'+t.dataset.lv+'.html#c'+t.dataset.i;
+      location.href='level'+t.dataset.lv.slice(1)+'.html#c'+t.dataset.i;
     });
   }
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('SW 註冊失敗',e)})});}
