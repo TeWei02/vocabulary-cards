@@ -1,12 +1,15 @@
-/* 單字卡睡眠學習 PWA Service Worker v1 */
-var CACHE = "vocab-cards-v6";
+/* 單字卡睡眠學習 PWA Service Worker v7（雙語版） */
+var CACHE = "vocab-cards-v7";
 var PRECACHE = [
-  "單字卡_index.html",
-  "單字卡_all.html",
-  "單字卡_L1.html",
-  "單字卡_L2.html",
-  "單字卡_L3.html",
-  "單字卡_L4.html",
+  "index.html",
+  "all.html",
+  "level1.html",
+  "level2.html",
+  "level3.html",
+  "level4.html",
+  "level5.html",
+  "level6.html",
+  "vocab_index.js",
   "manifest.json",
   "icon-192.png",
   "icon-512.png"
