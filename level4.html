@@ -184,9 +184,10 @@ body.lang-zh .def.en{display:none}
     'https://dict.youdao.com/dictvoice?audio='+q(text)+'&type=2',
     'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(text)
   ]).catch(function(){return speakSynth(text,'en-US');});}
-  // 拆字：逐字母拼讀（Google 對字母串讀得準；失敗改試有道，再退回系統語音）
+  // 拆字：逐字母拼讀（spellText 已輸出字母空格串，勿再二次拆字；
+  // 僅把詞組間的「 , 」轉為空格，避免逗號/多重空格讓 TTS 讀不出來）
   function speakSpell(text){
-    var letters=text.split('').join(' ');
+    var letters=(text||'').replace(/ , /g,' ');
     return playUrl([
       'https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=en&q='+q(letters),
       'https://dict.youdao.com/dictvoice?audio='+q(letters)+'&type=2'
