@@ -1,5 +1,5 @@
-/* 單字卡睡眠學習 PWA Service Worker v10（單字記憶：已學會/待複習標記） */
-var CACHE = "vocab-cards-v10";
+/* 單字卡睡眠學習 PWA Service Worker v11（播放條固定中/英切換） */
+var CACHE = "vocab-cards-v11";
 var PRECACHE = [
   "index.html",
   "all.html",

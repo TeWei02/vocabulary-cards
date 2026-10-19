@@ -313,6 +313,9 @@ body.lang-zh .def.en{display:none}
     +'#playerBar #pbMem{background:#16a085;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600}'
     +'#playerBar #pbMem.st-learned{background:#27ae60 !important}'
     +'#playerBar #pbMem.st-review{background:#8e44ad !important}'
+    +'#playerBar #pbLangWrap{display:flex;gap:4px}'
+    +'#playerBar #pbLangWrap button{background:#34495e;border:1.5px solid #3498db;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-weight:600}'
+    +'#playerBar #pbLangWrap button.on{background:#3498db;color:#fff}'
     +'.memBtn{background:#16a085 !important}'
     +'.memBtn.st-learned{background:#27ae60 !important}'
     +'.memBtn.st-review{background:#8e44ad !important}'
@@ -322,8 +325,11 @@ body.lang-zh .def.en{display:none}
     +'#playerBar #pbToggle{flex:1;padding:12px 6px;font-size:15px;min-height:46px}'
     +'#playerBar #pbPrev,#playerBar #pbNext{min-height:46px;padding:0 10px;font-size:14px}'
     +'#playerBar #pbSkip{display:none}'
-    +'#playerBar .pb-opt{display:none}'
-    +'#playerBar #pbMem{width:100%;min-height:44px;font-size:15px;order:8}'
+    +'#playerBar .pb-opt{display:flex;flex-wrap:wrap;width:100%;gap:6px;order:7}'
+    +'#playerBar .pb-opt select,#playerBar .pb-opt label{display:none}'
+    +'#playerBar #pbLangWrap{width:100%;display:flex;gap:6px}'
+    +'#playerBar #pbLangWrap button{flex:1;min-height:44px;font-size:15px}'
+    +'#playerBar #pbMem{width:100%;min-height:44px;font-size:15px}'
     +'#playerBar #pbInfo{width:100%;text-align:center;order:9}'
     +'}</style>'
     +'<span class="pb-main">'
@@ -334,6 +340,7 @@ body.lang-zh .def.en{display:none}
     +'</span>'
     +'<span id="pbInfo" style="min-width:90px;text-align:center"></span>'
     +'<span class="pb-opt">'
+    +'<span id="pbLangWrap"><button id="pbLangZh">中文</button><button id="pbLangEn">English</button></span>'
     +'<button id="pbMem" style="background:#16a085;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600">🔖 標記此詞</button>'
     +'<select id="pbGap" title="間隔" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.5">間隔 短0.5s</option><option value="1.5" selected>間隔 中1.5s</option><option value="3">間隔 長3s</option></select>'
     +'<select id="pbRate" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select>'
@@ -393,6 +400,27 @@ body.lang-zh .def.en{display:none}
     if(state.idx<0)return;
     cycleMem(wordOf(cards[state.idx]));
   });
+
+  // 語言切換（底部播放條固定可切，與頂部 langbar 同步）
+  function applyLang(lang){
+    try{localStorage.setItem('vc_lang',lang);}catch(e){}
+    document.body.classList.remove('lang-zh','lang-en');
+    document.body.classList.add('lang-'+lang);
+    var topZh=document.getElementById('langZh'),topEn=document.getElementById('langEn');
+    if(topZh)topZh.classList.toggle('on',lang==='zh');
+    if(topEn)topEn.classList.toggle('on',lang==='en');
+    var pzh=document.getElementById('pbLangZh'),pen=document.getElementById('pbLangEn');
+    if(pzh)pzh.classList.toggle('on',lang==='zh');
+    if(pen)pen.classList.toggle('on',lang==='en');
+  }
+  (function(){
+    var cur='en';
+    try{var v=localStorage.getItem('vc_lang');if(v==='zh'||v==='en')cur=v;}catch(e){}
+    var pzh=document.getElementById('pbLangZh'),pen=document.getElementById('pbLangEn');
+    if(pzh)pzh.addEventListener('click',function(){applyLang('zh');});
+    if(pen)pen.addEventListener('click',function(){applyLang('en');});
+    applyLang(cur);
+  })();
 })();
 
 (function(){
