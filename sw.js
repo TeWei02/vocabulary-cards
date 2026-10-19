@@ -1,5 +1,5 @@
-/* 單字卡睡眠學習 PWA Service Worker v9（拆字修復：變體全拆+有道備援） */
-var CACHE = "vocab-cards-v9";
+/* 單字卡睡眠學習 PWA Service Worker v10（單字記憶：已學會/待複習標記） */
+var CACHE = "vocab-cards-v10";
 var PRECACHE = [
   "index.html",
   "all.html",

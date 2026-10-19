@@ -41,6 +41,34 @@ body.lang-zh .def.en{display:none}
   }
   function saveIdx(){try{localStorage.setItem(STORE_KEY,String(state.idx));}catch(e){}}
   state.idx=loadIdx();
+  // 單字記憶：標記「已學會 / 待複習」，localStorage 持久化，手機端可操作
+  var MEM_KEY='vc_mem_map';
+  var mem={};
+  try{mem=JSON.parse(localStorage.getItem(MEM_KEY)||'{}')||{};}catch(e){mem={};}
+  function saveMem(){try{localStorage.setItem(MEM_KEY,JSON.stringify(mem));}catch(e){}}
+  function memOf(w){return mem[w]||'';}
+  function setMem(w,s){if(s)mem[w]=s;else delete mem[w];saveMem();updateMemUI();}
+  function cycleMem(w){
+    var st=memOf(w);
+    setMem(w, st==='learned'?'review':(st==='review'?'':'learned'));
+  }
+  var MEM_LABEL={learned:'✓ 已學會',review:'★ 待複習'};
+  function updateMemUI(){
+    cards.forEach(function(c){
+      var w=wordOf(c),st=memOf(w);
+      var b=c.querySelector('.memBtn');
+      if(b){
+        if(st){b.textContent=MEM_LABEL[st];b.className='memBtn st-'+st;}
+        else{b.textContent='🔖 標記';b.className='memBtn';}
+      }
+    });
+    var pb=document.getElementById('pbMem');
+    if(pb&&state.idx>=0&&cards[state.idx]){
+      var w=wordOf(cards[state.idx]),st=memOf(w);
+      pb.textContent=st?('標記：'+MEM_LABEL[st]):'🔖 標記此詞';
+      pb.className='pbMemBtn'+(st?' st-'+st:'');
+    }
+  }
   var audio=document.createElement('audio');
   audio.preload='auto';
   var synth=('speechSynthesis' in window)?window.speechSynthesis:null;
@@ -282,6 +310,12 @@ body.lang-zh .def.en{display:none}
   bar.innerHTML='<style>'
     +'#playerBar .pb-main{display:flex;align-items:center;gap:8px}'
     +'#playerBar .pb-opt{display:flex;align-items:center;gap:8px}'
+    +'#playerBar #pbMem{background:#16a085;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600}'
+    +'#playerBar #pbMem.st-learned{background:#27ae60 !important}'
+    +'#playerBar #pbMem.st-review{background:#8e44ad !important}'
+    +'.memBtn{background:#16a085 !important}'
+    +'.memBtn.st-learned{background:#27ae60 !important}'
+    +'.memBtn.st-review{background:#8e44ad !important}'
     +'@media (max-width:767px){'
     +'#playerBar{flex-wrap:wrap;gap:6px;padding:10px 8px;font-size:14px}'
     +'#playerBar .pb-main{width:100%;justify-content:center}'
@@ -289,6 +323,7 @@ body.lang-zh .def.en{display:none}
     +'#playerBar #pbPrev,#playerBar #pbNext{min-height:46px;padding:0 10px;font-size:14px}'
     +'#playerBar #pbSkip{display:none}'
     +'#playerBar .pb-opt{display:none}'
+    +'#playerBar #pbMem{width:100%;min-height:44px;font-size:15px;order:8}'
     +'#playerBar #pbInfo{width:100%;text-align:center;order:9}'
     +'}</style>'
     +'<span class="pb-main">'
@@ -299,6 +334,7 @@ body.lang-zh .def.en{display:none}
     +'</span>'
     +'<span id="pbInfo" style="min-width:90px;text-align:center"></span>'
     +'<span class="pb-opt">'
+    +'<button id="pbMem" style="background:#16a085;border:0;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600">🔖 標記此詞</button>'
     +'<select id="pbGap" title="間隔" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.5">間隔 短0.5s</option><option value="1.5" selected>間隔 中1.5s</option><option value="3">間隔 長3s</option></select>'
     +'<select id="pbRate" style="background:#34495e;color:#fff;border:0;border-radius:6px;padding:5px"><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select>'
     +'<label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="pbFast"> 快速模式</label>'
@@ -327,8 +363,18 @@ body.lang-zh .def.en{display:none}
   document.getElementById('pbLoop').addEventListener('change',function(){state.loop=this.checked;setBar();});
   document.getElementById('pbSkip').addEventListener('click',skipWord);
 
-  // 單卡點擊播放（點詞性按鈕）
+  // 單卡點擊播放（點詞性按鈕）；每張卡右上角加記憶標記按鈕（已學會/待複習循環切換）
   cards.forEach(function(card,ci){
+    var mb=document.createElement('button');
+    mb.type='button';
+    mb.className='memBtn';
+    mb.style.cssText='position:absolute;top:8px;right:8px;z-index:5;background:#16a085;color:#fff;border:0;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3)';
+    card.style.position='relative';
+    card.appendChild(mb);
+    mb.addEventListener('click',function(e){
+      e.stopPropagation();
+      cycleMem(wordOf(card));
+    });
     var btn=card.querySelector('.pos');
     if(!btn)return;
     btn.style.cursor='pointer';
@@ -340,6 +386,12 @@ body.lang-zh .def.en{display:none}
       card.scrollIntoView({block:'center',behavior:'smooth'});
       playCard(card,false);
     });
+  });
+  updateMemUI();
+  var pbMemBtn=document.getElementById('pbMem');
+  if(pbMemBtn)pbMemBtn.addEventListener('click',function(){
+    if(state.idx<0)return;
+    cycleMem(wordOf(cards[state.idx]));
   });
 })();
 
