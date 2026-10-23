@@ -11,6 +11,17 @@ covering all **40,690 words** (including phrases), grouped by levels L1–L6, wi
 
 > **Live site**: <https://tewei02.github.io/vocabulary-cards/>
 
+
+<div align="center">
+
+## Demo Preview
+
+A 12-second walkthrough of the core workflow: level-based browsing (L1–L6) → instant search → illustrated vocabulary cards → TTS pronunciation → memorisation markers → offline PWA. The video is a canvas-rendered simulation; open the live version or install the PWA to use it.
+
+<video controls width="640" src="assets/demo-preview.webm"></video>
+
+</div>
+
 ## Features
 
 - **Index (`index.html`)**: All / L1–L6 level entries with built-in instant search (filter as you type, e.g. `patient` / `date` / `term`).

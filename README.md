@@ -11,6 +11,17 @@
 
 > **線上版**：<https://tewei02.github.io/vocabulary-cards/>
 
+
+<div align="center">
+
+## Demo Preview
+
+12 秒看懂核心流程：分級瀏覽（L1–L6）→ 即時搜尋 → 圖文單字卡 → TTS 發音 → 記憶標記 → 離線 PWA。影片為 canvas 模擬的操作示範；直接開啟線上版或安裝 PWA 即可使用。
+
+<video controls width="640" src="assets/demo-preview.webm"></video>
+
+</div>
+
 ## 功能
 
 - **總目錄（index.html）**：全部 / L1–L6 分級入口，內建即時搜尋（輸入即篩選，如 `patient` / `date` / `term`）。
