@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Node / build
+node_modules/
+dist/
+
+# Logs & cache
+*.log
+.cache/
+
+# Editors
+.idea/
+.vscode/
+*.swp
